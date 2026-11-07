@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Books | Shelf E-Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site" id="hdr"></header>
+<main>
+<section>
+  <h1>Book catalogue</h1>
+  <form class="search" id="sf">
+    <input type="search" id="q" placeholder="Search by title or author">
+    <button class="btn">Search</button>
+  </form>
+  <p class="ok" id="msg" hidden></p>
+  <div class="grid" id="list"></div>
+</section>
+</main>
+<footer class="site" id="ftr"></footer>
+<script src="assets/app.js"></script>
+<script>
+function render() {
+  const q = document.getElementById('q').value.trim().toLowerCase();
+  const rows = db.books.filter(b => (b.title + ' ' + b.author).toLowerCase().includes(q)).sort((a, b) => a.title.localeCompare(b.title));
+  list.innerHTML = rows.map(b => { const ok = b.avail > 0; return `<article class="book">${cover(b)}
+    <h3>${esc(b.title)}</h3><p class="muted">${esc(b.author)}</p>
+    <p class="status ${ok ? 'in' : 'out'}">${ok ? b.avail + ' available' : 'All copies borrowed'}</p>
+    <button class="btn small" data-id="${b.id}" ${ok ? '' : 'disabled'}>Borrow</button></article>`; }).join('')
+    || `<p class="muted">No books match "${esc(q)}". Try a different title or author.</p>`;
+}
+function say(t) { msg.textContent = t; msg.hidden = false; }
+sf.onsubmit = e => { e.preventDefault(); render(); };
+q.oninput = render;
+list.onclick = e => {
+  const id = +e.target.dataset.id; if (!id) return;
+  const u = me();
+  if (!u) { location.href = 'login.html'; return; }
+  if (u.role !== 'student') return say('Only student accounts can borrow books.');
+  const b = db.books.find(x => x.id === id);
+  if (db.loans.some(l => l.userId === u.id && l.bookId === id && !l.returned)) return say('You already have this book.');
+  if (b.avail < 1) return say('No copies are available right now.');
+  b.avail--;
+  db.loans.push({ id: db.nextId++, userId: u.id, bookId: id, borrowed: today(), due: addDays(LOAN_DAYS), returned: null });
+  save(); render(); say('Borrowed. Due back in ' + LOAN_DAYS + ' days.');
+};
+render(); layout();
+</script></body></html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Register | Shelf E-Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site" id="hdr"></header>
+<main>
+<section class="narrow">
+  <h1>Create your account</h1>
+  <div id="errs"></div>
+  <form id="f">
+    <label>Full name <input name="name" required></label>
+    <label>Student ID <input name="sid" required></label>
+    <label>Email <input type="email" name="email" required></label>
+    <label>Password <input type="password" name="pw" minlength="8" required></label>
+    <label>Confirm password <input type="password" name="pw2" minlength="8" required></label>
+    <button class="btn">Register</button>
+  </form>
+  <p class="muted">Already registered? <a href="login.html">Log in</a></p>
+</section>
+</main>
+<footer class="site" id="ftr"></footer>
+<script src="assets/app.js"></script>
+<script>
+f.onsubmit = e => {
+  e.preventDefault();
+  const name = f.name.value.trim(), sid = f.sid.value.trim(), email = f.email.value.trim(), err = [];
+  if (f.pw.value.length < 8) err.push('Use a password of at least 8 characters.');
+  if (f.pw.value !== f.pw2.value) err.push('The passwords do not match.');
+  if (db.users.some(u => u.email.toLowerCase() === email.toLowerCase() || u.studentId.toLowerCase() === sid.toLowerCase()))
+    err.push('That email or student ID is already registered. Try logging in.');
+  errs.innerHTML = err.map(m => `<p class="alert">${esc(m)}</p>`).join('');
+  if (err.length) return;
+  db.users.push({ id: db.nextId++, name, studentId: sid, email, password: f.pw.value, role: 'student', created: today() });
+  save(); flash('Account created. Log in to start borrowing.');
+  location.href = 'login.html';
+};
+layout();
+</script></body></html>

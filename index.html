@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home | Shelf E-Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site" id="hdr"></header>
+<main>
+<section class="hero">
+  <h1>Welcome to Shelf.<br>Your campus library, open all night.</h1>
+  <p>Search the catalogue, borrow a book in one click, and keep track of due dates from your phone. Built for students, managed by the library team.</p>
+  <div class="actions" id="actions"></div>
+</section>
+<section>
+  <h2>Featured books</h2>
+  <div class="grid" id="featured"></div>
+  <p><a href="books.html">See the full catalogue</a></p>
+</section>
+</main>
+<footer class="site" id="ftr"></footer>
+<script src="assets/app.js"></script>
+<script>
+document.getElementById('featured').innerHTML = db.books.slice(-4).reverse().map(b =>
+  `<article class="book">${cover(b)}<h3>${esc(b.title)}</h3><p class="muted">${esc(b.author)}</p></article>`).join('');
+document.getElementById('actions').innerHTML = me()
+  ? '<a class="btn" href="books.html">Browse books</a>'
+  : '<a class="btn" href="login.html">Log in</a><a class="btn ghost" href="register.html">Create an account</a>';
+layout();
+</script></body></html>

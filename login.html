@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log in | Shelf E-Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site" id="hdr"></header>
+<main>
+<section class="narrow">
+  <h1>Log in</h1>
+  <p class="ok" id="ok" hidden></p>
+  <p class="alert" id="err" hidden></p>
+  <form id="f">
+    <label>Email or student ID <input name="login" required autofocus></label>
+    <label>Password <input type="password" name="password" required></label>
+    <button class="btn">Log in</button>
+  </form>
+  <p class="muted">New here? <a href="register.html">Create an account</a></p>
+</section>
+</main>
+<footer class="site" id="ftr"></footer>
+<script src="assets/app.js"></script>
+<script>
+const fm = takeFlash(); if (fm) { ok.textContent = fm; ok.hidden = false; }
+f.onsubmit = e => {
+  e.preventDefault();
+  const id = f.login.value.trim().toLowerCase();
+  const u = db.users.find(x => (x.email.toLowerCase() === id || x.studentId.toLowerCase() === id) && x.password === f.password.value);
+  if (!u) { err.textContent = 'Email, student ID or password is incorrect.'; err.hidden = false; return; }
+  localStorage.setItem(SKEY, u.id);
+  location.href = u.role === 'admin' ? 'admin.html' : 'dashboard.html';
+};
+layout();
+</script></body></html>

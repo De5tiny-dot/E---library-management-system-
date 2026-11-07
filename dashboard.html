@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My books | Shelf E-Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site" id="hdr"></header>
+<main>
+<section>
+  <h1 id="hello"></h1>
+  <p class="muted" id="profile"></p>
+  <p class="ok" id="msg" hidden></p>
+  <h2>Currently borrowed</h2>
+  <div id="cur"></div>
+  <h2>Borrowing history</h2>
+  <div id="his"></div>
+</section>
+</main>
+<footer class="site" id="ftr"></footer>
+<script src="assets/app.js"></script>
+<script>
+const u = requireLogin('student');
+if (u) {
+  hello.textContent = 'Hello, ' + u.name;
+  profile.textContent = `Student ID ${u.studentId} · ${u.email} · Member since ${u.created}`;
+  function render() {
+    const mine = db.loans.filter(l => l.userId === u.id).map(l => ({ ...l, book: db.books.find(b => b.id === l.bookId) }));
+    const cu = mine.filter(l => !l.returned).sort((a, b) => a.due.localeCompare(b.due));
+    const hi = mine.filter(l => l.returned).sort((a, b) => b.returned.localeCompare(a.returned));
+    cur.innerHTML = cu.length ? `<div class="scroll"><table><tr><th>Title</th><th>Borrowed</th><th>Due</th><th></th></tr>` + cu.map(l => {
+      const late = l.due < today();
+      return `<tr><td>${esc(l.book.title)}<br><span class="muted">${esc(l.book.author)}</span></td><td>${l.borrowed}</td>
+      <td class="${late ? 'late' : ''}">${l.due}${late ? ' (overdue)' : ''}</td><td><button class="btn small" data-id="${l.id}">Return</button></td></tr>`;
+    }).join('') + '</table></div>' : '<p class="muted">You have no books out. <a href="books.html">Find something to read.</a></p>';
+    his.innerHTML = hi.length ? `<div class="scroll"><table><tr><th>Title</th><th>Borrowed</th><th>Returned</th></tr>` +
+      hi.map(l => `<tr><td>${esc(l.book.title)}</td><td>${l.borrowed}</td><td>${l.returned}</td></tr>`).join('') + '</table></div>'
+      : '<p class="muted">Returned books will show up here.</p>';
+  }
+  cur.onclick = e => {
+    const id = +e.target.dataset.id; if (!id) return;
+    msg.textContent = returnBook(id, u.id) ? 'Book returned. Thank you.' : 'That loan could not be found.';
+    msg.hidden = false; render();
+  };
+  render();
+}
+layout();
+</script></body></html>

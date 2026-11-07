@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin | Shelf E-Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site" id="hdr"></header>
+<main>
+<section>
+  <h1>Admin dashboard</h1>
+  <p class="ok" id="msg" hidden></p>
+  <div class="stats" id="stats"></div>
+  <h2 id="formTitle">Add a book</h2>
+  <form class="inline-form" id="bf">
+    <label>Title <input name="title" required></label>
+    <label>Author <input name="author" required></label>
+    <label>Cover image URL (optional) <input name="cover"></label>
+    <label>Total copies <input type="number" name="copies" min="1" value="1"></label>
+    <button class="btn" id="saveBtn">Add book</button>
+    <a href="#" id="cancel" hidden>Cancel</a>
+  </form>
+  <h2>Books</h2>
+  <div class="scroll" id="books"></div>
+  <h2>Transactions</h2>
+  <div class="scroll" id="tx"></div>
+</section>
+</main>
+<footer class="site" id="ftr"></footer>
+<script src="assets/app.js"></script>
+<script>
+if (requireLogin('admin')) {
+  let editId = 0;
+  const say = t => { msg.textContent = t; msg.hidden = false; };
+  const onLoan = id => db.loans.filter(l => l.bookId === id && !l.returned).length;
+  function render() {
+    const active = db.loans.filter(l => !l.returned).length;
+    stats.innerHTML = [[db.books.length, 'titles'], [db.users.filter(u => u.role === 'student').length, 'registered students'],
+      [db.loans.length, 'borrowing records'], [active, 'on loan now']].map(([n, l]) => `<div><strong>${n}</strong> ${l}</div>`).join('');
+    books.innerHTML = '<table><tr><th>Title</th><th>Author</th><th>Available</th><th></th></tr>' + db.books.map(b =>
+      `<tr><td>${esc(b.title)}</td><td>${esc(b.author)}</td><td>${b.avail} of ${b.total}</td><td class="row-actions">
+      <button class="btn small ghost" data-edit="${b.id}">Edit</button><button class="btn small danger" data-del="${b.id}">Delete</button></td></tr>`).join('') + '</table>';
+    const rows = [...db.loans].sort((a, b) => (!a.returned === !b.returned) ? b.borrowed.localeCompare(a.borrowed) : (a.returned ? 1 : -1)).slice(0, 50);
+    tx.innerHTML = rows.length ? '<table><tr><th>Student</th><th>Book</th><th>Borrowed</th><th>Due</th><th>Status</th></tr>' + rows.map(l => {
+      const s = db.users.find(u => u.id === l.userId), b = db.books.find(x => x.id === l.bookId), late = !l.returned && l.due < today();
+      return `<tr><td>${esc(s.name)}<br><span class="muted">${esc(s.studentId)}</span></td><td>${esc(b.title)}</td><td>${l.borrowed}</td>
+      <td class="${late ? 'late' : ''}">${l.due}</td><td>${l.returned ? 'Returned ' + l.returned
+      : `<button class="btn small" data-ret="${l.id}">${late ? 'Overdue: mark returned' : 'Mark returned'}</button>`}</td></tr>`;
+    }).join('') + '</table>' : '<p class="muted">No borrowing yet. Loans will appear here.</p>';
+  }
+  function resetForm() { editId = 0; bf.reset(); bf.copies.value = 1; formTitle.textContent = 'Add a book'; saveBtn.textContent = 'Add book'; cancel.hidden = true; }
+  bf.onsubmit = e => {
+    e.preventDefault();
+    const t = bf.title.value.trim(), a = bf.author.value.trim(), c = Math.max(1, +bf.copies.value || 1), cv = bf.cover.value.trim();
+    if (editId) {
+      const out = onLoan(editId);
+      if (c < out) return say(`${out} copies are on loan, so total copies can't go below ${out}.`);
+      Object.assign(db.books.find(b => b.id === editId), { title: t, author: a, cover: cv, total: c, avail: c - out });
+      say('Book updated.');
+    } else {
+      db.books.push({ id: db.nextId++, title: t, author: a, cover: cv, total: c, avail: c });
+      say('Book added.');
+    }
+    save(); resetForm(); render();
+  };
+  cancel.onclick = e => { e.preventDefault(); resetForm(); };
+  document.body.addEventListener('click', e => {
+    const d = e.target.dataset;
+    if (d.edit) {
+      const b = db.books.find(x => x.id === +d.edit); editId = b.id;
+      bf.title.value = b.title; bf.author.value = b.author; bf.cover.value = b.cover; bf.copies.value = b.total;
+      formTitle.textContent = 'Edit book'; saveBtn.textContent = 'Save changes'; cancel.hidden = false; bf.scrollIntoView();
+    } else if (d.del) {
+      const id = +d.del;
+      if (db.loans.some(l => l.bookId === id)) return say("This book has borrowing records, so it can't be deleted. Set its copies to match what is on loan instead.");
+      if (confirm('Delete this book?')) { db.books = db.books.filter(b => b.id !== id); save(); say('Book deleted.'); render(); }
+    } else if (d.ret) {
+      say(returnBook(+d.ret) ? 'Marked as returned.' : 'That loan was already returned.'); render();
+    }
+  });
+  render();
+}
+layout();
+</script></body></html>
